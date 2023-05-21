@@ -1,6 +1,5 @@
 use std::fs::{File, OpenOptions};
-use quartz_nbt;
-use quartz_nbt::io::Flavor;
+use quartz_nbt::{self, io::Flavor};
 
 fn main() {
     let mut file_in = File::open("my_cool_schematic.schem").unwrap();
