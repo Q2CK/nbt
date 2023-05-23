@@ -1,14 +1,13 @@
-use std::fs::{File, OpenOptions};
-use quartz_nbt::{self, io::Flavor, NbtCompound, NbtList, NbtTag};
-
 mod mcschematic;
 use mcschematic::*;
-
+use quartz_nbt::{self, io::Flavor, NbtCompound, NbtList, NbtTag};
+use std::fs::{File, OpenOptions};
 
 fn main() {
     let mut file_out = OpenOptions::new()
         .write(true)
-        .open("mcs.schem")
+        .create(true)
+        .open("mcs2.schem")
         .unwrap();
 
     let mut nbt_compound = quartz_nbt::NbtCompound::new();
