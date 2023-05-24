@@ -3,9 +3,6 @@ use mcschematic::*;
 use quartz_nbt::{self, io::Flavor, NbtCompound, NbtList, NbtTag};
 use std::fs::{File, OpenOptions};
 
-mod versions;
-use versions::*;
-
 fn main() {/*
     let mut file_out = OpenOptions::new()
         .write(true)
@@ -49,7 +46,15 @@ fn main() {/*
 
     let mut schematic = MCSchematic::new();
 
-    schematic.set_block((0, 0, 0), "minecraft:stone");
+    schematic.set_block((0, 0, -1), "minecraft:stone");
+    schematic.set_block((-2, -5, 0), "minecraft:stone");
+    schematic.set_block((-1, 0, -10), "minecraft:stone");
+    schematic.set_block((1, 3, 0), "minecraft:stone");
+    schematic.set_block((4, 0, -7), "minecraft:stone");
 
     schematic.save("C:/Users/Oem/PycharmProjects/nbt", "testmakro.schem", JE_1_18_1).expect("TODO: panic message");
+
+    println!("{:#?}", schematic);
+
+    //println!("{:?}", (129 as usize).to_varint().iter().map(|x| format!("{:08b} ", x)).collect::<String>());
 }

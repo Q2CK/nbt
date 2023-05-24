@@ -1,23 +1,62 @@
+use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
+use std::iter::zip;
+use std::ops::BitAnd;
 use quartz_nbt::{self, compound, io::Flavor, NbtCompound, NbtList, NbtTag};
+
+pub mod versions;
+pub use versions::*;
 
 type BlockPalette<'a> = HashMap<&'a str, i32>;
 type BlockData<'a> = HashMap<(i32, i32, i32), &'a str>;
 
+type Coords = (i32, i32, i32);
+
+type Byte = u8;
+
 /*
 Trait responsible for converting a numeric type to a vector of bytes, according to the varint format
 
+https://github.com/SpongePowered/Schematic-Specification/blob/master/versions/schematic-2.md
+"Each integer is bitpacked into a single Byte with varint encoding.
+The first Byte determines the length of the integer with a maximum length
+of 5 (for a 32 bit number), and depending on the length, each proceeding Byte
+is or'ed and current value bit shifted by the length multiplied by 7. Examples can be
+found with Sponge's implementation for retreving data and storing data."
 
 */
-trait ToVarint {
-    fn to_varint(&self) -> Vec<u8>;
+
+pub trait ToVarint {
+    fn to_varint(&self) -> Vec<Byte>;
 }
 
-impl ToVarint for usize {
-    fn to_varint(&self) -> Vec<u8> {
-        vec![]
+impl<'a> ToVarint for usize {
+
+    fn to_varint(&self) -> Vec<Byte> {
+        const MASK_7_BIT: usize = 127;
+
+        let mut input = *self;
+        let mut output: Vec<Byte> = vec![];
+
+        if input == 0 { return vec![0] };
+
+        while input != 0 {
+            let mut new_byte = (input & MASK_7_BIT);
+
+            if input > MASK_7_BIT {
+                new_byte |= !MASK_7_BIT;
+            }
+
+            output.push(new_byte as u8);
+            input >>= 7;
+        }
+        return output;
     }
+}
+
+fn on_tuple<T>(f: fn(T, T) -> T, lhs: (T, T, T), rhs: (T, T, T)) -> (T, T, T) {
+    (f(lhs.0, rhs.0), f(lhs.1, rhs.1), f(lhs.2, rhs.2))
 }
 
 #[derive(Debug)]
@@ -28,9 +67,8 @@ pub struct MCSchematic<'a> {
 
     block_palette: BlockPalette<'a>,
     block_data: BlockData<'a>,
-    width: i32,
-    height: i32,
-    length: i32,
+    lowest_coords: Coords,
+    highest_coords: Coords,
 }
 
 impl<'a> MCSchematic<'a> {
@@ -44,13 +82,12 @@ impl<'a> MCSchematic<'a> {
         MCSchematic {
             block_palette: BlockPalette::new(),
             block_data: BlockData::new(),
-            width: 0,
-            height: 0,
-            length: 0
+            lowest_coords: (0, 0, 0),
+            highest_coords: (0, 0, 0),
         }
     }
 
-    pub fn set_block(&mut self, coords: (i32, i32, i32), block_data: &'a str) {
+    pub fn set_block(&mut self, coords: Coords, block_data: &'a str) {
         /*
         Method that adds a new block to the schematic, updating the palette
         and blocks list as needed.
@@ -74,6 +111,10 @@ impl<'a> MCSchematic<'a> {
 
         // Add the new block to the blocks list with the given coords and its index in the palette
         self.block_data.insert(coords, block_data);
+
+        // Update the lowest and highest coords if needed
+        self.lowest_coords = on_tuple(min, self.lowest_coords, coords);
+        self.highest_coords = on_tuple(max, self.highest_coords, coords);
     }
 
     pub fn save(&self, folder_path: &'a str, file_name: &'a str, version: i32) -> Result<String, String> {
