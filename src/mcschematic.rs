@@ -86,12 +86,10 @@ impl<'a> MCSchematic<'a> {
         // Create a new nbt root
         let mut nbt = NbtCompound::new();
 
-        /*
-        Insert version info tags.
-        DataVersion depends on the game version.
-        "Mcschem only implements version 2 because its the most popular" ~ Sloimay
-         */
+        // Insert version info tags. DataVersion depends on the game version.
         nbt.insert("DataVersion", NbtTag::Int(version));
+
+        //"Mcschem only implements version 2 because its the most popular" ~ Sloimay
         nbt.insert("Version", NbtTag::Int(2));
 
         // Insert the block palette size tag
