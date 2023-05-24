@@ -14,23 +14,23 @@ type Coords = (i32, i32, i32);
 
 type Byte = u8;
 
-/*
-Trait responsible for converting a numeric type to a vector of bytes, according to the varint format
+pub trait Varint {
+    /*
+    Trait responsible for converting a numeric type to a vector of bytes, according to the varint format
+    and vice versa.
 
-https://github.com/SpongePowered/Schematic-Specification/blob/master/versions/schematic-2.md
-"Each integer is bitpacked into a single Byte with varint encoding.
-The first Byte determines the length of the integer with a maximum length
-of 5 (for a 32 bit number), and depending on the length, each proceeding Byte
-is or'ed and current value bit shifted by the length multiplied by 7. Examples can be
-found with Sponge's implementation for retreving data and storing data."
+    https://github.com/SpongePowered/Schematic-Specification/blob/master/versions/schematic-2.md
+    "Each integer is bitpacked into a single Byte with varint encoding.
+    The first Byte determines the length of the integer with a maximum length
+    of 5 (for a 32 bit number), and depending on the length, each proceeding Byte
+    is or'ed and current value bit shifted by the length multiplied by 7. Examples can be
+    found with Sponge's implementation for retreving data and storing data."
+    */
 
-*/
-
-pub trait ToVarint {
     fn to_varint(&self) -> Vec<Byte>;
 }
 
-impl<'a> ToVarint for usize {
+impl<'a> Varint for usize {
 
     fn to_varint(&self) -> Vec<Byte> {
         const MASK_7_BIT: usize = 127;
@@ -54,6 +54,7 @@ impl<'a> ToVarint for usize {
     }
 }
 
+// Function that executes another function on pairs of tuple entries and returns the resulting tuple
 fn on_tuple<T>(f: fn(T, T) -> T, lhs: (T, T, T), rhs: (T, T, T)) -> (T, T, T) {
     (f(lhs.0, rhs.0), f(lhs.1, rhs.1), f(lhs.2, rhs.2))
 }
@@ -74,8 +75,8 @@ impl<'a> MCSchematic<'a> {
     pub fn new() -> MCSchematic<'a> {
         /*
         Method that returns a new, empty instance of the MCSchematic structure.
-        The block palette and the blocks list get updated as new blocks are
-        placed in the schematic
+        The block palette, schematic boundaries and the blocks list get updated
+        as new blocks are placed in the schematic
          */
 
         MCSchematic {
