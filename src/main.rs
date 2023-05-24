@@ -1,7 +1,5 @@
 mod mcschematic;
 use mcschematic::*;
-use quartz_nbt::{self, io::Flavor, NbtCompound, NbtList, NbtTag};
-use std::fs::{File, OpenOptions};
 
 fn main() {/*
     let mut file_out = OpenOptions::new()
@@ -47,12 +45,12 @@ fn main() {/*
     let mut schematic = MCSchematic::new();
 
     schematic.set_block((0, 0, -1), "minecraft:stone");
-    schematic.set_block((-2, -5, 0), "minecraft:stone");
-    schematic.set_block((-1, 0, -10), "minecraft:stone");
-    schematic.set_block((1, 3, 0), "minecraft:stone");
-    schematic.set_block((4, 0, -7), "minecraft:stone");
+    schematic.set_block((-2, -5, 0), "minecraft:bone");
+    schematic.set_block((-1, 0, -10), "minecraft:srone");
+    schematic.set_block((1, 3, 0), "minecraft:fafone");
+    schematic.set_block((4, 0, -7), "minecraft:telephone");
 
-    schematic.save("C:/Users/Oem/PycharmProjects/nbt", "testmakro.schem", JE_1_18_1).expect("TODO: panic message");
+    schematic.save("testmakro.schem", JE_1_18_1).expect("TODO: panic message");
 
     println!("{:#?}", schematic);
 

@@ -1,15 +1,14 @@
 use std::cmp::{max, min};
 use std::collections::HashMap;
-use std::fs::{File, OpenOptions};
-use std::iter::zip;
-use std::ops::BitAnd;
-use quartz_nbt::{self, compound, io::Flavor, NbtCompound, NbtList, NbtTag};
+use std::fs::OpenOptions;
+
+use quartz_nbt::{self, compound, io::Flavor, NbtCompound, NbtTag};
 
 pub mod versions;
 pub use versions::*;
 
 type BlockPalette<'a> = HashMap<&'a str, i32>;
-type BlockData<'a> = HashMap<(i32, i32, i32), &'a str>;
+type BlockData = HashMap<(i32, i32, i32), i32>;
 
 type Coords = (i32, i32, i32);
 
@@ -42,7 +41,7 @@ impl<'a> ToVarint for usize {
         if input == 0 { return vec![0] };
 
         while input != 0 {
-            let mut new_byte = (input & MASK_7_BIT);
+            let mut new_byte = input & MASK_7_BIT;
 
             if input > MASK_7_BIT {
                 new_byte |= !MASK_7_BIT;
@@ -66,7 +65,7 @@ pub struct MCSchematic<'a> {
     */
 
     block_palette: BlockPalette<'a>,
-    block_data: BlockData<'a>,
+    block_data: BlockData,
     lowest_coords: Coords,
     highest_coords: Coords,
 }
@@ -110,24 +109,24 @@ impl<'a> MCSchematic<'a> {
         }
 
         // Add the new block to the blocks list with the given coords and its index in the palette
-        self.block_data.insert(coords, block_data);
+        self.block_data.insert(coords, palette_index);
 
         // Update the lowest and highest coords if needed
         self.lowest_coords = on_tuple(min, self.lowest_coords, coords);
         self.highest_coords = on_tuple(max, self.highest_coords, coords);
     }
 
-    pub fn save(&self, folder_path: &'a str, file_name: &'a str, version: i32) -> Result<String, String> {
+    pub fn save(&self, file_path: &'a str, version: i32) -> Result<String, String> {
 
         // Open the target schematic file with the provided name
         let mut file_out;
         match OpenOptions::new()
             .write(true)
             .create(true)
-            .open(file_name)
+            .open(file_path)
         {
             Ok(v) => file_out = v,
-            Err(e) => return Err("Failed to save file".to_string())
+            Err(e) => return Err(format!("Failed to save file: {e}"))
         }
 
         // Create, fill and insert the block palette tag
@@ -135,8 +134,12 @@ impl<'a> MCSchematic<'a> {
         for block_type in self.block_palette.iter() {
             palette.insert(*block_type.0, NbtTag::Int(*block_type.1));
         }
+
+        // Create the BlockData from the accumulated list of blocks
+        // TODO
+
         // Create a new nbt root
-        let mut nbt: NbtCompound = compound!(
+        let nbt: NbtCompound = compound!(
             "DataVersion": NbtTag::Int(version),
             "Version": NbtTag::Int(2),
             "PalettteMax": NbtTag::Int(self.block_palette.len() as i32),
@@ -155,7 +158,7 @@ impl<'a> MCSchematic<'a> {
         Flavor::GzCompressed)
         .expect("TODO: panic message");
 
-        Ok(format!("Saved to {}/{}", folder_path, file_name))
+        Ok(format!("Saved to {}", file_path))
     }
 }
 
