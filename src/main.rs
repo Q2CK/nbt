@@ -10,6 +10,6 @@ fn main() {
     schematic.set_block((0, -2, 1), "minecraft:cobblestone");
     schematic.set_block((1, -1, 1), "minecraft:stone");
 
-    schematic.save("testmakro.schem", JE_1_18_2).expect("TODO: panic message");
+    schematic.save("my_cool_schematic.schem", JE_1_18_2).expect("Failed to save");
 
 }

@@ -14,6 +14,9 @@ type Coords = (i32, i32, i32);
 
 type Byte = i8;
 
+const ADD: fn(i32, i32) -> i32 = std::ops::Add::add;
+const SUB_PLUS_1: fn(i32, i32) -> i32 = |a, b| a - b + 1;
+
 // Function that executes another function on pairs of tuple entries and returns the resulting tuple
 fn on_tuple<T>(f: fn(T, T) -> T, lhs: (T, T, T), rhs: (T, T, T)) -> (T, T, T) {
     (f(lhs.0, rhs.0), f(lhs.1, rhs.1), f(lhs.2, rhs.2))
@@ -35,7 +38,7 @@ pub trait Varint {
     fn to_varint(&self) -> Vec<Byte>;
 }
 
-impl<'a> Varint for usize {
+impl Varint for usize {
 
     fn to_varint(&self) -> Vec<Byte> {
         const MASK_7_BIT: i8 = 127;
@@ -109,7 +112,7 @@ impl<'a> MCSchematic<'a> {
 
         let palette_index: i32;
 
-        // Check if the new block is already present in the palette, add to palette if not
+        // Check if the new block is already present in the palette, ADD to palette if not
         if self.block_palette.contains_key(block_data) {
             palette_index = self.block_palette[block_data];
         }
@@ -211,16 +214,15 @@ impl<'a> MCSchematic<'a> {
         let mut bytes: Vec<Byte> = vec![];
 
         for y in 0..self.height {
-            for z in 0..self.width{
+            for z in 0..self.width {
                 for x in 0..self.length {
-                    let real_coords = on_tuple(std::ops::Add::add,(x, y, z), self.lowest_coords);
+                    let real_coords = on_tuple(ADD,(x, y, z), self.lowest_coords);
                     bytes.append(match self.block_data.get(
                         &real_coords) {
                         Some(v) => (*v as usize).to_varint(),
                         None => vec![0]
                     }.as_mut()
                     );
-                    println!("{:?},{:?}", real_coords, bytes);
                 }
             }
         }
@@ -233,7 +235,7 @@ impl<'a> MCSchematic<'a> {
         Returns a tuple containing the length, height and width of the schematic
         by subtracting the lwoest coords from the highest coords
         */
-        return on_tuple(|lhs, rhs| lhs - rhs + 1, self.highest_coords, self.lowest_coords);
+        return on_tuple(SUB_PLUS_1, self.highest_coords, self.lowest_coords);
     }
 }
 
