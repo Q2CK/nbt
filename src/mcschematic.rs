@@ -2,7 +2,7 @@ use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::fs::OpenOptions;
 
-use quartz_nbt::{self, compound, io::Flavor, NbtCompound, NbtTag};
+use quartz_nbt::{self, compound, io::Flavor, NbtCompound, NbtList, NbtTag};
 
 pub mod versions;
 pub use versions::*;
@@ -162,6 +162,7 @@ impl<'a> MCSchematic<'a> {
             "Palette": palette_tag,
 
             "BlockData": block_data_tag,
+            "BlockEntities": NbtList::new(),
 
             "Metadata": {
                 "MCSchematicMetadata" : {
@@ -209,15 +210,17 @@ impl<'a> MCSchematic<'a> {
 
         let mut bytes: Vec<Byte> = vec![];
 
-        for z in 0..self.width {
-            for y in 0..self.height {
+        for y in 0..self.height {
+            for z in 0..self.width{
                 for x in 0..self.length {
+                    let real_coords = on_tuple(std::ops::Add::add,(x, y, z), self.lowest_coords);
                     bytes.append(match self.block_data.get(
-                        &on_tuple(std::ops::Sub::sub,(x, y, z), self.get_dimensions())) {
+                        &real_coords) {
                         Some(v) => (*v as usize).to_varint(),
                         None => vec![0]
                     }.as_mut()
                     );
+                    println!("{:?},{:?}", real_coords, bytes);
                 }
             }
         }
