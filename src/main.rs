@@ -47,7 +47,7 @@ fn main() {/*
     schematic.set_block((0, 0, -1), "minecraft:stone");
     schematic.set_block((0, 0, 0), "minecraft:stone");
 
-    schematic.save("testmakro.schem", JE_1_18_1).expect("TODO: panic message");
+    schematic.save("testmakro.schem", JE_1_18_2).expect("TODO: panic message");
 
     println!("{:#?}", schematic);
 
