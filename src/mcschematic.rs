@@ -14,7 +14,7 @@ type Coords = (i32, i32, i32);
 
 type Byte = i8;
 
-const ADD: fn(i32, i32) -> i32 = std::ops::Add::add;
+const ADD: fn(i32, i32) -> i32 = |a, b| a + b;
 const SUB_PLUS_1: fn(i32, i32) -> i32 = |a, b| a - b + 1;
 
 // Function that executes another function on pairs of tuple entries and returns the resulting tuple
