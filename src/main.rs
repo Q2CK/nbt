@@ -45,10 +45,7 @@ fn main() {/*
     let mut schematic = MCSchematic::new();
 
     schematic.set_block((0, 0, -1), "minecraft:stone");
-    schematic.set_block((-2, -5, 0), "minecraft:bone");
-    schematic.set_block((-1, 0, -10), "minecraft:srone");
-    schematic.set_block((1, 3, 0), "minecraft:fafone");
-    schematic.set_block((4, 0, -7), "minecraft:telephone");
+    schematic.set_block((0, 0, 0), "minecraft:stone");
 
     schematic.save("testmakro.schem", JE_1_18_1).expect("TODO: panic message");
 
