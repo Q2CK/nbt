@@ -1,40 +1,48 @@
-use std::cmp::{max, min};
-use std::collections::HashMap;
-use std::fs::OpenOptions;
+use std::{
+    cmp::{max, min},
+    collections::HashMap,
+    fs::OpenOptions
+};
 
-use quartz_nbt::{self, compound, io::Flavor, NbtCompound, NbtList, NbtTag};
 
-pub mod versions;
-pub use versions::*;
+use quartz_nbt::{
+    self,
+    compound,
+    io::Flavor,
+    NbtCompound,
+    NbtList,
+    NbtTag
+};
 
 type BlockPalette<'a> = HashMap<&'a str, i32>;
-type BlockData = HashMap<(i32, i32, i32), i32>;
+type BlockData = HashMap<(i16, i16, i16), i32>;
 
-type Coords = (i32, i32, i32);
 
+type Coords = (i16, i16, i16);
 type Byte = i8;
 
-const ADD: fn(i32, i32) -> i32 = |a, b| a + b;
-const SUB_PLUS_1: fn(i32, i32) -> i32 = |a, b| a - b + 1;
 
-// Function that executes another function on pairs of tuple entries and returns the resulting tuple
+const ADD: fn(i16, i16) -> i16 = |a, b| a + b;
+const SUB_PLUS_1: fn(i16, i16) -> i16 = |a, b| a - b + 1;
+
+
+/// Executes another function on pairs of tuple entries and returns the resulting tuple
+
 fn on_tuple<T>(f: fn(T, T) -> T, lhs: (T, T, T), rhs: (T, T, T)) -> (T, T, T) {
     (f(lhs.0, rhs.0), f(lhs.1, rhs.1), f(lhs.2, rhs.2))
 }
 
+/// Trait responsible for converting a numeric type to a vector of bytes, according to the varint format
+/// and vice versa.
+
+/// https://github.com/SpongePowered/Schematic-Specification/blob/master/versions/schematic-2.md
+/// "Each integer is bitpacked into a single Byte with varint encoding.
+/// The first Byte determines the length of the integer with a maximum length
+/// of 5 (for a 32 bit number), and depending on the length, each proceeding Byte
+/// is or'ed and current value bit shifted by the length multiplied by 7. Examples can be
+/// found with Sponge's implementation for retrieving data and storing data."
+
 pub trait Varint {
-    /*
-    Trait responsible for converting a numeric type to a vector of bytes, according to the varint format
-    and vice versa.
-
-    https://github.com/SpongePowered/Schematic-Specification/blob/master/versions/schematic-2.md
-    "Each integer is bitpacked into a single Byte with varint encoding.
-    The first Byte determines the length of the integer with a maximum length
-    of 5 (for a 32 bit number), and depending on the length, each proceeding Byte
-    is or'ed and current value bit shifted by the length multiplied by 7. Examples can be
-    found with Sponge's implementation for retreving data and storing data."
-    */
-
     fn to_varint(&self) -> Vec<Byte>;
 }
 
@@ -62,11 +70,9 @@ impl Varint for usize {
     }
 }
 
-#[derive(Debug)]
+/// Main schematic struct containing all properties of the schematic
+
 pub struct MCSchematic<'a> {
-    /*
-    Structure representing the schematic being generated
-    */
 
     block_palette: BlockPalette<'a>,
     block_data: BlockData,
@@ -74,19 +80,18 @@ pub struct MCSchematic<'a> {
     lowest_coords: Coords,
     highest_coords: Coords,
 
-    length: i32,
-    width: i32,
-    height: i32
+    length: i16,
+    width: i16,
+    height: i16
 }
 
 impl<'a> MCSchematic<'a> {
-    pub fn new() -> MCSchematic<'a> {
-        /*
-        Method that returns a new, empty instance of the MCSchematic structure.
-        The block palette, schematic boundaries and the blocks list get updated
-        as new blocks are placed in the schematic
-         */
 
+    /// Returns a new, empty instance of the MCSchematic structure.
+    /// The block palette, schematic boundaries and the blocks list get updated
+    /// as new blocks are placed in the schematic
+
+    pub fn new() -> MCSchematic<'a> {
         MCSchematic {
             block_palette: BlockPalette::from([("minecraft:air", 0)]),
             block_data: BlockData::new(),
@@ -99,13 +104,14 @@ impl<'a> MCSchematic<'a> {
         }
     }
 
-    pub fn set_block(&mut self, coords: Coords, block_data: &'a str) {
-        /*
-        Method that adds a new block to the schematic, updating the palette
-        and blocks list as needed.
+    /// Adds a new block to the schematic, updating the palette
+    /// and blocks list as needed.
+    ///
+    /// coords - desired block coordinates: (x, y, z)
+    ///
+    /// block_data - full in-game id of the block, such as "minecraft::stone"
 
-        block_data is the full in-game id of the block, such as "minecraft::stone"
-         */
+    pub fn set_block(&mut self, coords: Coords, block_data: &'a str) {
 
         // Store the current palette size
         let palette_size = self.block_palette.len() as i32;
@@ -135,18 +141,21 @@ impl<'a> MCSchematic<'a> {
         }
     }
 
+    /// Saves the generated schematic to the desired path
+    ///
+    /// file_path - location and name of the target file
+    ///
+    /// version - MC version id, use constants from mcschematic::versions
+
     pub fn save(&mut self, file_path: &'a str, version: i32) -> Result<String, String> {
 
         // Open the target schematic file with the provided name
-        let mut file_out;
-        match OpenOptions::new()
+        let Ok(mut file_out) = OpenOptions::new()
             .write(true)
             .create(true)
-            .open(file_path)
-        {
-            Ok(v) => file_out = v,
-            Err(e) => return Err(format!("Failed to save file: {e}"))
-        }
+            .open(file_path) else {
+            return Err("Failed to save schematic".to_string());
+        };
 
         // Store the dimensions of the generated schematic
         (self.length, self.height, self.width) = self.get_dimensions();
@@ -173,10 +182,9 @@ impl<'a> MCSchematic<'a> {
                 }
             },
 
-            // TODO Remove unwrap
-            "Length": NbtTag::Short(self.length.try_into().unwrap()),
-            "Height": NbtTag::Short(self.height.try_into().unwrap()),
-            "Width": NbtTag::Short(self.width.try_into().unwrap()),
+            "Length": NbtTag::Short(self.length),
+            "Height": NbtTag::Short(self.height),
+            "Width": NbtTag::Short(self.width)
         );
 
         quartz_nbt::io::write_nbt(
@@ -189,11 +197,10 @@ impl<'a> MCSchematic<'a> {
         Ok(format!("Saved to {}", file_path))
     }
 
+    /// Generates the block palette nbt compound tag based on the
+    /// list of blocks used in the generating program
+
     fn generate_palette_tag(&self) -> NbtCompound {
-        /*
-        Generates the block palette nbt compound tag based on the
-        list of blocks used in the generating program
-        */
 
         let mut palette = NbtCompound::new();
         for block_type in self.block_palette.iter() {
@@ -203,13 +210,12 @@ impl<'a> MCSchematic<'a> {
         return palette;
     }
 
-    fn generate_block_data_tag(&self) -> NbtTag {
-        /*
-        Generates the block data object, which is a byte array of varint-encoded numbers
-        that correspond to indexes in the block palette
+    /// Generates the block data object, which is a byte array of varint-encoded numbers
+    /// that correspond to indexes in the block palette
+    ///
+    /// The entries are indexed by: x + z * Width + y * Width * Length relative to the lowest coords
 
-        The entries are indexed by: x + z * Width + y * Width * Length relative to the lowest coords
-        */
+    fn generate_block_data_tag(&self) -> NbtTag {
 
         let mut bytes: Vec<Byte> = vec![];
 
@@ -217,8 +223,7 @@ impl<'a> MCSchematic<'a> {
             for z in 0..self.width {
                 for x in 0..self.length {
                     let real_coords = on_tuple(ADD,(x, y, z), self.lowest_coords);
-                    bytes.append(match self.block_data.get(
-                        &real_coords) {
+                    bytes.append(match self.block_data.get(&real_coords) {
                         Some(v) => (*v as usize).to_varint(),
                         None => vec![0]
                     }.as_mut()
@@ -230,12 +235,11 @@ impl<'a> MCSchematic<'a> {
         return NbtTag::ByteArray(bytes);
     }
 
-    fn get_dimensions(&self) -> (i32, i32, i32) {
-        /*
-        Returns a tuple containing the length, height and width of the schematic
-        by subtracting the lwoest coords from the highest coords
-        */
+    /// Returns a tuple containing the length, height and width of the schematic
+    /// by subtracting the lowest coords from the highest coords
+
+    fn get_dimensions(&self) -> (i16, i16, i16) {
+
         return on_tuple(SUB_PLUS_1, self.highest_coords, self.lowest_coords);
     }
 }
-
