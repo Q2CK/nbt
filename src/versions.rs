@@ -1,4 +1,7 @@
 #![allow(dead_code)]
+pub const JE_1_20_4: i32 = 3700;
+pub const JE_1_20_1: i32 = 3465;
+
 pub const JE_1_19_2: i32 = 3120;
 pub const JE_1_19_2_RELEASE_CANDIDATE_2: i32 = 3119;
 pub const JE_1_19_2_RELEASE_CANDIDATE_1: i32 = 3118;
